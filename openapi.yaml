@@ -1,0 +1,115 @@
+openapi: '3.1.0'
+info:
+  title: Oculus Attestation
+  description: >
+    Takes a token produced by DeviceApplicationIntegrity.GetIntegrityToken() method on the Quest device.  Uses this token to 
+    perform license validation against the graph.oculus.com attestation service, as described here: 
+    https://developer.oculus.com/documentation/unity/ps-attestation-api/
+  version: '1.0'
+servers:
+  - url: https://api.archmag.us/
+components:
+  schemas:
+    NonceResponse:
+      type: object
+      properties:
+        nonce:
+          type: string
+          format: byte
+          minLength: 22
+          maxLength: 172
+          example: '6M2pCbwpSm6gI9WSGzzy3vA07CUpzLk2h8oIW2n060AktYDGFRIk2Q=='
+      required:
+        - nonce
+    IntegrityRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          example: 'This is an opaque string returned from the Quest device'
+      required:
+        - token
+    IntegrityResponseSuccess:
+      type: object
+      properties:
+        serverResult:
+          description: 'Whether the Oculus server responded with an expected response or not'
+          type: string
+          enum: 
+            - success 
+            - failed
+        serverResponse: 
+          description: 'The raw string containing the Oculus server response body'
+          type: string
+        integrity:
+          description: 'Whether the token passed the Oculus integrity check for the app'
+          type: string
+          enum: 
+            - passed
+            - failed
+        claims:
+          description: >
+            The base64API-decodable string containing the "claims" response from the Oculus server, if provided by the server
+      required:
+        - serverResult
+        - serverResponse
+    IntegrityResponseError:
+      type: object
+      properties:
+        message:
+          type: string
+          example: 'An error message providing details of the problem'
+    
+paths:
+  /generate-nonce:
+    get:
+      summary: 'Request a nonce to be used in attestation'
+      description: >
+        Generates a nonce value to be passed to the DeviceApplicationIntegrity module on the Quest device to
+        get an integrity token, as described here:
+        https://developer.oculus.com/documentation/unity/ps-attestation-api/
+      responses: 
+        '200':
+          description: 'A JSON object holding a randomly generated nonce value'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NonceResponse'
+  /get-integrity:
+    post:
+      summary: 'Input a token generated from the Quest device and return whether the application is licnensed for the user on the device'
+      description: >
+        After receiving a nonce value from /generate-nonce, use that value to request a token from the DeviceApplicationIntegrity
+        module on the Quest device using the GetIntegrityToken(nonce) local API call.  Send that token to this API and it will send that
+        token along with the application's API Key to the graph.oculus.com servers to fetch whether the application is entitled for
+        that token or not.  If graph.oculus.com returns successfully, this API will as well, along with whether the token passed or
+        failed attestation.  If not, this API will return an error.  More details may be found in the the body of the response.
+      requestBody:
+        required: true
+        content: 
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntegrityRequest'
+      responses:
+        '200':
+          description: >
+            An object containing whether the connection to the server was successful, whether the token passed attestation,
+            and the claims for the token if it passed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntegrityResponseSuccess'
+        '400':
+          description: 'Returned when the request body is malformed.  See message in response for details.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntegrityResponseError'
+        '500':
+          description: >
+            Returned if there is a server-side error.  This will *not* be returned if there is an issue communicating with
+            the Oculus server.  If there is an issue on the Oculus side, that will be returned as part of a 200 response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntegrityResponseError'
