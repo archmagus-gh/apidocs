@@ -31,6 +31,7 @@ components:
           type: string
           example: 'This is an opaque string returned from the Quest device'
       required:
+        - apikey
         - token
     IntegrityResponseSuccess:
       type: object
