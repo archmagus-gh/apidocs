@@ -24,6 +24,9 @@ components:
     IntegrityRequest:
       type: object
       properties:
+        apikey:
+          type: string
+          example: 'Key configured at https://api.archmag.us that is associated with a AppCredential and an active attestation subscrption'
         token:
           type: string
           example: 'This is an opaque string returned from the Quest device'
@@ -61,7 +64,7 @@ components:
           example: 'An error message providing details of the problem'
     
 paths:
-  /generate-nonce:
+  /svc/generate-nonce:
     get:
       summary: 'Request a nonce to be used in attestation'
       description: >
@@ -75,13 +78,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NonceResponse'
-  /get-integrity:
+  /svc/get-integrity:
     post:
       summary: 'Input a token generated from the Quest device and return whether the application is licnensed for the user on the device'
       description: >
         After receiving a nonce value from /generate-nonce, use that value to request a token from the DeviceApplicationIntegrity
-        module on the Quest device using the GetIntegrityToken(nonce) local API call.  Send that token to this API and it will send that
-        token along with the application's API Key to the graph.oculus.com servers to fetch whether the application is entitled for
+        module on the Quest device using the GetIntegrityToken(nonce) local API call.  Send that token to this API along with the apikey
+        that you have configured at https://api.archmag.us, and this function will send that token along with the AppCredential configured 
+        for the apikey to the graph.oculus.com servers to fetch whether the application is entitled for
         that token or not.  If graph.oculus.com returns successfully, this API will as well, along with whether the token passed or
         failed attestation.  If not, this API will return an error.  More details may be found in the the body of the response.
       requestBody:
