@@ -81,7 +81,7 @@ paths:
                 $ref: '#/components/schemas/NonceResponse'
   /svc/get-integrity:
     post:
-      summary: 'Input a token generated from the Quest device and return whether the application is licnensed for the user on the device'
+      summary: 'Input a token generated from the Quest device and return whether the application is licensed for the user on the device'
       description: >
         After receiving a nonce value from /generate-nonce, use that value to request a token from the DeviceApplicationIntegrity
         module on the Quest device using the GetIntegrityToken(nonce) local API call.  Send that token to this API along with the apikey
